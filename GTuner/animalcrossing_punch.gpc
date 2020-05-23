@@ -1,0 +1,193 @@
+#pragma METAINFO("Animal Crossing Punch", 1, 0, "ntang")
+
+
+/*
+Ring Fit mod for Animal crossing
+Inputs below:
+Run and Press right stick = Move
+Punch with right joycon = Press "A"
+Hold "SL" = Hold "A"
+Press "A" = Press "ZL"
+
+Hold "R" with pressing button on right joycon to press relative button on the left joycon
+Hold "R" with pressing "SR" = Press "R"
+Hold "R" with pressing "SL" = Press "L"
+
+
+*/
+
+
+
+
+const fix32 MOVE_THRESHOLD = 40.0;
+bool controllerON;
+bool isRunning;
+
+// Combo Timers
+
+int runCheck;
+
+init
+{
+    controllerON = FALSE;
+    isRunning = FALSE;
+    // remap sticks so you can use the right joycon to move
+    remapper_swap(STICK_2_X, STICK_1_X);
+    remapper_swap(STICK_2_Y, STICK_1_Y);
+    runCheck = 0;
+}
+
+
+
+main 
+{
+    
+    fix32 stick2X = get_val(STICK_2_X);
+    fix32 stick2Y = get_val(STICK_2_Y);
+    nowRunning(stick2X, stick2Y);
+    
+    // Punch for buttons
+    if(get_val(BUTTON_4) == 100.0)
+    {            
+        if(get_val(BUTTON_6) == 100.0)
+        {
+            // Press RS = Press LS
+            set_val(BUTTON_6, 0.0);
+            set_val(BUTTON_9, 100.0);
+        }
+        else if(get_val(BUTTON_14) == 100.0)
+        {
+            // Press X = Press Up
+            set_val(BUTTON_14, 0.0);
+            set_val(BUTTON_10, 100.0);
+        }
+        else if(get_val(BUTTON_16) == 100.0)
+        {
+            // Press B = Press Down
+            set_val(BUTTON_16, 0.0);
+            set_val(BUTTON_11, 100.0);
+        }
+        else if(get_val(BUTTON_15) == 100.0)
+        {
+            // Press A = Press Right
+            set_val(BUTTON_15, 0.0);
+            set_val(BUTTON_13, 100.0);
+        }
+        else if(get_val(BUTTON_17) == 100.0)
+        {
+            // Press Y = Press Left
+            set_val(BUTTON_17, 0.0);
+            set_val(BUTTON_12, 100.0);
+        }
+        else if(get_val(BUTTON_3) == 100.0)
+        {
+            // Press + = Press -
+            set_val(BUTTON_3, 0.0);
+            set_val(BUTTON_2, 100.0);
+        }
+        else if(get_val(BUTTON_5) == 100.0)
+        {
+            // Press ZR = Press ZL
+            set_val(BUTTON_5, 0.0);
+            set_val(BUTTON_8, 100.0);
+        }
+        else if(get_val(BUTTON_19) == 100.0)
+        {
+            // Press SL = Press L
+            set_val(BUTTON_19, 0.0);
+            set_val(BUTTON_7, 100.0);
+        }
+        
+        
+        if(get_val(BUTTON_20) == 100.0)
+        {
+            // Press SR + R = Press R
+            set_val(BUTTON_20, 0.0);
+        }
+        else 
+        {
+            // Release R
+            set_val(BUTTON_4, 0.0);
+        }
+        
+        // RS = LS
+        set_val(STICK_1_X, stick2X);
+        set_val(STICK_1_Y, stick2Y);
+        set_val(STICK_2_X, 0.0);
+        set_val(STICK_2_Y, 0.0);
+    }
+    
+    if(get_val(ACCEL_2_Y) > 50.0 || get_val(BUTTON_19) == 100.0)
+    {
+        // Shake = Press A
+        // Hold SL = Hold A
+		set_val(BUTTON_19, 0.0);
+        set_val(BUTTON_15, 100.0);
+    }
+    else if(get_val(BUTTON_15) == 100.0)
+    {
+        // Press A = Press ZL
+        set_val(BUTTON_15, 0.0);
+        set_val(BUTTON_8, 100.0);
+    }
+    
+    if(get_val(BUTTON_1) == 100.0 && get_val(BUTTON_5) == 100.0)
+    {
+        // Press ZR + Home = Press Capture
+        set_val(BUTTON_1, 0.0);
+        set_val(BUTTON_5, 0.0);
+        set_val(BUTTON_18, 100.0);
+    }
+
+    //debug();
+
+}
+
+// the command to let me do things only if I'm running
+// This function checks if the joycons are shaking in your legstrap due to running
+void nowRunning(fix32 stick2X, fix32 stick2Y)
+{
+    if(get_val(ACCEL_1_Y) < -30.6)
+    {
+        runCheck = 100;            
+    }
+    
+    if(get_val(ACCEL_1_Y) < -23.8 && get_val(ACCEL_1_Y) > -24.6)
+    {
+        runCheck--;
+    }
+        
+// resets variable if it goes under 0
+    if(runCheck <0)
+    {
+        runCheck = 0;
+    }
+                
+    /*turn off buttons if i'm not running
+    70 is a magic number that sets a pace for the user to be running at for 
+    the controller's joystick to be activated
+    increase if you want to run harder, decrease if you want to run less
+    */
+    if(runCheck < 50 )
+    {        
+        if(stick2X > MOVE_THRESHOLD)
+            set_val(STICK_2_X, MOVE_THRESHOLD); 
+        else if(stick2X < -MOVE_THRESHOLD)
+            set_val(STICK_2_X, -MOVE_THRESHOLD); 
+        
+        if(stick2Y > MOVE_THRESHOLD)
+            set_val(STICK_2_Y, MOVE_THRESHOLD); 
+        else if(stick2Y < -MOVE_THRESHOLD)
+            set_val(STICK_2_Y, -MOVE_THRESHOLD);        
+    }
+
+}
+
+
+
+
+void debug()
+{
+    printf("%d", runCheck);
+    
+}

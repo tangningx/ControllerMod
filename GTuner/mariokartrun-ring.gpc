@@ -1,0 +1,217 @@
+#pragma METAINFO("joycon_Mario_Kart", 0, 90, "ntang")
+
+
+/*
+Mario Kart meets Ringfit
+
+Rotate Ringcon for direction
+Lay flat Ringcon for drifting
+Press X for item
+Squating for jump
+
+
+*/
+
+//fix32 forwardTrack; // variable to track moving forward
+//fix32 forwardUnit; // all the math done
+bool controllerON;
+bool isRunning;
+bool mDriftingStart = FALSE;
+bool mDriftingInProgress = FALSE;
+
+// Combo Timers
+
+int runCheck;
+int iHoldItemCount;
+int iJumpCooldown;
+const int cJumpCooldownThres = 100;
+fix32 mSumAcc2X = 0.0;
+
+init
+{
+    controllerON = FALSE;
+    isRunning = FALSE;
+    iHoldItemCount = -1;
+    iJumpCooldown = cJumpCooldownThres;
+    
+    
+    // remap sticks so you can run with the right joycon.
+    remapper_swap(STICK_2_X, STICK_1_X);
+    remapper_swap(STICK_2_Y, STICK_1_Y);
+    remapper_swap(BUTTON_14, BUTTON_7);
+    runCheck = 0;
+}
+
+
+
+main 
+{
+    // this program deals with checking runs, explained after main()
+    nowRunning();
+    
+    //if you are underneath the pace threshold, do this
+    if(runCheck < 60)
+    {
+        //set_val(BUTTON_15, 0); // can't drive
+        
+        if(get_val(BUTTON_3) > 0.0) // switch the + button with -
+            {
+                set_val(BUTTON_3, 0.0); 
+                set_val(BUTTON_2, 100.0);
+            }
+        
+    }
+    
+    // Run: if you are running or above pace, do this
+    if(runCheck >= 50)
+    {					
+        
+        set_val(BUTTON_15, 100.0); // Run to drive        
+                
+    }
+           
+    // Update mSumAcc2X
+    fix32 acc2X = get_val(ACCEL_2_X);
+    mSumAcc2X = (mSumAcc2X*0.99 + acc2X*0.01);
+    fix32 absAcc2X = abs(acc2X);
+    fix32 absSumAcc2X = abs(mSumAcc2X);
+    
+    // Direction
+    if(absSumAcc2X > 10.0)
+    {
+        set_val(STICK_2_X, clamp(mSumAcc2X*5.0,-100.0,100.0));
+    }
+    else
+    {
+        set_val(STICK_2_X, 0.0);
+    }
+    
+    // Use item
+    // Press X
+    
+    // Drift
+    // squeeze Ringcon
+    /*if(!mDriftingStart && abs(mSumAcc2X-acc2Y) > 20.0)
+    {
+        mDriftingStart = TRUE;
+    }
+    if(mDriftingStart)
+        set_val(BUTTON_4, 100.0);
+    
+    if(mDriftingStart && abs(mSumAcc2X-acc2Y) < 5.0)
+    {
+        mDriftingInProgress = TRUE;
+    }
+    
+    if(mDriftingInProgress && abs(mSumAcc2X-acc2Y) > 20.0)
+    {
+        mDriftingInProgress = FALSE;
+        mDriftingStart = FALSE;
+    }*/
+    
+    // Drift
+    // Put ring horizontal 
+    if(iHoldItemCount <= 0 && get_val(ACCEL_2_Y) > -2.0 && get_val(ACCEL_2_Z) < -20.0)
+        iHoldItemCount = 1;
+    if(iHoldItemCount > 0 && get_val(ACCEL_2_Y) < -20.0)
+        iHoldItemCount = 0;
+    if(iHoldItemCount > 0)
+    {
+        iHoldItemCount++;
+        if(iHoldItemCount>100)
+            set_val(BUTTON_4, 100.0); // Drift
+    }
+
+
+        
+
+        
+/*
+///////////////////////////////////////////////		
+Below is just a mash-up of button swaps
+This allows the user to play with just one joycon
+
+the magic numbers are based off of personal tests
+///////////////////////////////////////////////
+*/
+        
+    // Jump: squeeze Ringcon
+    /*if(get_val(ACCEL_2_X) < -25.0 && iJumpCooldown >= cJumpCooldownThres)
+    {
+        set_val(BUTTON_4, 100.0); // jump
+        iJumpCooldown = 0;
+    }
+    
+    if(iJumpCooldown < cJumpCooldownThres)
+        iJumpCooldown++;*/
+    
+
+
+/* Squating is sneaky, when the legstrap is horizontal, it activates
+the only time your leg can be horizontal is squating, mess with -25 to fit
+your prefences 
+*/ 
+    // toyko drift with squating, naw use item?
+    if(get_val(ACCEL_1_Z) < -17.00 && runCheck < 30) // activate when not running
+    {
+        //set_val(BUTTON_4, 100.0); 
+        //set_val(BUTTON_15, 100.0);
+        //combo_run(HoldButton);
+        set_val(BUTTON_4, 100.0);
+    }
+
+    //debug();
+
+}
+
+/*
+    Quick explanation for how my duct-tape run checks are done
+    Whenever you "run" my program sets the variable to runCheck = 100
+    every tick, the variable is reduced by -- (1)
+    This way there isn't an immediate loss of movement in-game 
+    There are definitely better way to do this with better math
+    Plans to update this later on
+
+*/
+void nowRunning()
+{
+    if(get_val(ACCEL_1_Y) < -30.6)
+    {
+        runCheck = 100;	
+            
+    }
+    if(get_val(ACCEL_1_Y) < -23.8 && get_val(ACCEL_1_Y) > -24.6)
+    {
+        runCheck--;
+    }    
+        
+    if(runCheck <0) // if the run variable is less than 0, keep it at 0
+    {
+        runCheck = 0;
+    }
+
+}
+
+// turns off all buttons so nothing can come out, turned off for now
+void disableButtons() 
+{
+    uint8 i = BUTTON_1;
+ 
+    for(; i<=BUTTON_21; ++i) {
+        set_val(i, 0.0);
+    }
+}
+
+
+combo HoldButton
+{
+    set_val(BUTTON_4, 100.00);
+    wait(3000);
+}
+
+// debug check for my runCheck
+void debug()
+{
+    printf("mDriftingInProgress %d, mDriftingStart %d", mDriftingInProgress, mDriftingStart);
+    
+}
