@@ -1,4 +1,4 @@
-#pragma METAINFO("Animal Crossing Punch", 1, 0, "ntang")
+#pragma METAINFO("Animal Crossing Punch", 1, 1, "ntang")
 
 
 /*
@@ -12,6 +12,7 @@ Press "A" = Press "ZL"
 Hold "R" with pressing button on right joycon to press relative button on the left joycon
 Hold "R" with pressing "SR" = Press "R"
 Hold "R" with pressing "SL" = Press "L"
+Hold "R" with pressing "ZR" = Press "ZR"
 
 
 */
@@ -45,8 +46,17 @@ main
     fix32 stick2X = get_val(STICK_2_X);
     fix32 stick2Y = get_val(STICK_2_Y);
     nowRunning(stick2X, stick2Y);
+    bool releaseZR = (get_val(BUTTON_5) == 100.0);
     
-    // Punch for buttons
+    
+    if(get_val(BUTTON_1) == 100.0 && releaseZR)
+    {
+        // Press ZR + Home = Press Capture
+        set_val(BUTTON_1, 0.0);
+        set_val(BUTTON_18, 100.0);
+    }
+    
+    // Hold R for buttons
     if(get_val(BUTTON_4) == 100.0)
     {            
         if(get_val(BUTTON_6) == 100.0)
@@ -85,11 +95,10 @@ main
             set_val(BUTTON_3, 0.0);
             set_val(BUTTON_2, 100.0);
         }
-        else if(get_val(BUTTON_5) == 100.0)
+        else if(releaseZR)
         {
-            // Press ZR = Press ZL
-            set_val(BUTTON_5, 0.0);
-            set_val(BUTTON_8, 100.0);
+            // Press ZR + R = Press ZR
+            releaseZR = FALSE;
         }
         else if(get_val(BUTTON_19) == 100.0)
         {
@@ -131,13 +140,9 @@ main
         set_val(BUTTON_8, 100.0);
     }
     
-    if(get_val(BUTTON_1) == 100.0 && get_val(BUTTON_5) == 100.0)
-    {
-        // Press ZR + Home = Press Capture
-        set_val(BUTTON_1, 0.0);
+    if(releaseZR)
         set_val(BUTTON_5, 0.0);
-        set_val(BUTTON_18, 100.0);
-    }
+        
 
     //debug();
 
@@ -149,26 +154,27 @@ void nowRunning(fix32 stick2X, fix32 stick2Y)
 {
     if(get_val(ACCEL_1_Y) < -30.6)
     {
-        runCheck = 100;            
+        runCheck = 1000;            
     }
     
-    if(get_val(ACCEL_1_Y) < -23.8 && get_val(ACCEL_1_Y) > -24.6)
-    {
+    //if(get_val(ACCEL_1_Y) < -23.8 && get_val(ACCEL_1_Y) > -24.6)
+    if(runCheck > 0)
+	{
         runCheck--;
     }
         
 // resets variable if it goes under 0
-    if(runCheck <0)
+    /*if(runCheck <0)
     {
         runCheck = 0;
-    }
+    }*/
                 
     /*turn off buttons if i'm not running
     70 is a magic number that sets a pace for the user to be running at for 
     the controller's joystick to be activated
     increase if you want to run harder, decrease if you want to run less
     */
-    if(runCheck < 50 )
+    if(runCheck < 500 )
     {        
         if(stick2X > MOVE_THRESHOLD)
             set_val(STICK_2_X, MOVE_THRESHOLD); 

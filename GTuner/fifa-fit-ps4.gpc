@@ -1,0 +1,189 @@
+#pragma METAINFO("FIFA FIT", 0, 1, "ntang")
+
+#include <remapper.gph>
+/*
+Ring Fit mod for Animal crossing
+Inputs below:
+Run and Press right stick = Move
+Punch with right joycon = Press "A"
+Hold "SL" = Hold "A"
+Press "A" = Press "ZL"
+
+Hold "R" with pressing button on right joycon to press relative button on the left joycon
+Hold "R" with pressing "SR" = Press "R"
+Hold "R" with pressing "SL" = Press "L"
+Hold "R" with pressing "ZR" = Press "ZR"
+
+
+*/
+
+const uint8 FIFAMappingLayout[39] = {
+    RMP_USB_A | RMP_USB_B | RMP_USB_C | RMP_USB_D | RMP_BT_A | RMP_BT_B,
+    BUTTON_1,  BUTTON_2,  BUTTON_3,  BUTTON_4,  BUTTON_20, BUTTON_6,  BUTTON_19,
+    BUTTON_8,  BUTTON_9,  BUTTON_10, BUTTON_11, BUTTON_12, BUTTON_13, BUTTON_15, 
+    BUTTON_16, BUTTON_17, BUTTON_14, BUTTON_18, BUTTON_7, BUTTON_5, BUTTON_21, 
+    STICK_2_Y, STICK_2_X, STICK_1_Y, STICK_1_X,  
+    POINT_1_X, POINT_1_Y, POINT_2_X, POINT_2_Y, 
+    ACCEL_1_X, ACCEL_1_Y, ACCEL_1_Z, ACCEL_2_X, ACCEL_2_Y, ACCEL_2_Z, 
+    GYRO_1_X,  GYRO_1_Y,  GYRO_1_Z
+};
+
+
+const fix32 MOVE_THRESHOLD = 40.0;
+bool controllerON;
+bool isKicking;
+uint32 kicking_time_counter = 0;
+const uint32 KICKING_SAMPLE_RATE = 5; //every 5ms ~= 200Hz 
+fix32 KICKING_Y_DICKING_THRES = -4.0;
+fix32 lastValueY = 100.0;
+uint32 kicking_detector_counter = 0;
+const uint32 KICKING_DETECTOR_THRES = 10;
+
+bool isDetectingKicking = FALSE;
+bool isDetectingKicking2 = FALSE;
+// Combo Timers
+
+int runCheck;
+
+init
+{
+    controllerON = FALSE;
+    isKicking = FALSE;
+    // remap sticks so you can use the right joycon to move
+    //remapper_swap(STICK_2_X, STICK_1_Y);
+    //remapper_swap(STICK_2_Y, STICK_1_X);
+    //remapper(FIFAMappingLayout);
+    runCheck = 0;
+}
+
+
+
+main 
+{
+    
+    fix32 stick2X = get_val(STICK_2_X);
+    fix32 stick2Y = get_val(STICK_2_Y);
+    nowRunning(stick2X, stick2Y);
+    
+    //Check if it's kicking the ball
+    /*fix32 currentValueY = get_val(ACCEL_1_Y);
+    fix32 currentValueZ = get_val(ACCEL_1_Z);
+    if(currentValueY < -5.0)
+    {
+        kicking_time_counter += elapsed_time();
+        if(kicking_time_counter > KICKING_SAMPLE_RATE)
+        {
+            kicking_time_counter = 0;
+            if(lastValueY > 0.0)  lastValueY = currentValueY;
+            
+            fix32 deltaY = currentValueY - lastValueY;
+            if(deltaY <= 0.0 && deltaY > KICKING_Y_DICKING_THRES)
+            {
+                printf("deltaY %.2f", deltaY);
+                // Detect kicking
+                if(currentValueZ > 10.0 || kicking_detector_counter > 0)
+                    kicking_detector_counter++;
+            }
+            else
+            {
+                kicking_detector_counter = 0;
+            }
+            lastValueY = currentValueY;
+        }
+    }
+    else
+    {
+        kicking_time_counter = 0;
+        kicking_detector_counter = 0;
+        isKicking = FALSE;
+    }
+    
+    if(kicking_detector_counter > KICKING_DETECTOR_THRES)
+        isKicking = TRUE;*/
+    
+    
+    fix32 currentGyroX = get_val(GYRO_1_X);
+    if(!isDetectingKicking && currentGyroX > 15.0) isDetectingKicking = TRUE;
+    
+    if(isDetectingKicking)
+    {
+        if(currentGyroX < 0.0)  isDetectingKicking2 = TRUE;
+        
+        if(isDetectingKicking2)
+        {
+            if(currentGyroX > 0.0 || (isKicking && currentGyroX > -25.0)) 
+            {
+                ResetKicking();
+            }
+            else if(!isKicking && currentGyroX < -25.0)
+            {
+                isKicking = TRUE;
+            }
+        }
+        
+    }
+    
+    if(isKicking)
+        set_val(BUTTON_16, 100.0); 
+    
+            
+
+    //debug();
+
+}
+
+// the command to let me do things only if I'm running
+// This function checks if the joycons are shaking in your legstrap due to running
+void nowRunning(fix32 stick2X, fix32 stick2Y)
+{
+    if(get_val(ACCEL_1_Y) < -30.6)
+    {
+        runCheck = 1000;            
+    }
+    
+    //if(get_val(ACCEL_1_Y) < -23.8 && get_val(ACCEL_1_Y) > -24.6)
+    if(runCheck > 0)
+	{
+        runCheck--;
+    }
+        
+// resets variable if it goes under 0
+    /*if(runCheck <0)
+    {
+        runCheck = 0;
+    }*/
+                
+    /*turn off buttons if i'm not running
+    70 is a magic number that sets a pace for the user to be running at for 
+    the controller's joystick to be activated
+    increase if you want to run harder, decrease if you want to run less
+    */
+    /*if(runCheck < 500 )
+    {        
+        if(stick2X > MOVE_THRESHOLD)
+            set_val(STICK_2_X, MOVE_THRESHOLD); 
+        else if(stick2X < -MOVE_THRESHOLD)
+            set_val(STICK_2_X, -MOVE_THRESHOLD); 
+        
+        if(stick2Y > MOVE_THRESHOLD)
+            set_val(STICK_2_Y, MOVE_THRESHOLD); 
+        else if(stick2Y < -MOVE_THRESHOLD)
+            set_val(STICK_2_Y, -MOVE_THRESHOLD);        
+    }*/
+    set_val(STICK_2_X, -stick2X);  
+
+}
+
+void ResetKicking()
+{
+    isDetectingKicking = FALSE;
+    isDetectingKicking2 = FALSE;
+    isKicking = FALSE;
+}
+
+
+void debug()
+{
+    printf("%d", runCheck);
+    
+}
